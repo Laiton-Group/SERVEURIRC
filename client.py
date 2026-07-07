@@ -29,7 +29,7 @@ class APIClient:
         self.nick = ""
         self.password = ""
         self.role = "normal"
-        self.channels = ["general"]
+        self.channels = ["general", "testing"]
         self.all_msgs = {}
         self.last_id = 0
         self.running = True

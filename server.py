@@ -7,7 +7,7 @@ USERS_FILE = "data/users.json"
 os.makedirs("data", exist_ok=True)
 
 users = {}
-db = {"channels": ["general"], "messages": []}
+db = {"channels": ["general", "testing"], "messages": []}
 lock = threading.Lock()
 online = {}
 online_lock = threading.Lock()
@@ -382,6 +382,7 @@ body{font-family:'Segoe UI',sans-serif;background:#0f0f1a;color:#e0e0e0;height:1
 #sidebar .chan:hover{background:#1a1a3e}
 #sidebar .chan.active{border-left-color:#00d4aa;background:#1a1a3e;color:#00d4aa}
 #sidebar .chan .badge{background:#00d4aa;color:#000;border-radius:10px;padding:1px 6px;font-size:0.7em;margin-left:auto}
+#chan-header{display:flex;align-items:center;justify-content:space-between;padding:6px 14px;border-bottom:1px solid #333;color:#888;font-size:0.8em;text-transform:uppercase}
 #chat{flex:1;display:flex;flex-direction:column}
 #msgs{flex:1;overflow-y:auto;padding:12px 16px}
 .msg{display:flex;gap:8px;margin-bottom:10px;animation:fadeIn .15s}
@@ -426,6 +427,13 @@ body{font-family:'Segoe UI',sans-serif;background:#0f0f1a;color:#e0e0e0;height:1
 </div>
 <div id="main">
 <div id="sidebar">
+<div id="chan-header">
+<span>Salons</span>
+<span id="chan-actions" style="display:none">
+<button onclick="createChan()" title="Creer" style="background:none;border:none;color:#00d4aa;cursor:pointer;font-size:1.1em;padding:0 4px">+</button>
+<button onclick="deleteChan()" title="Supprimer" style="background:none;border:none;color:#ff4444;cursor:pointer;font-size:1.1em;padding:0 4px">−</button>
+</span>
+</div>
 <div class="chan-list" id="chan-list"></div>
 </div>
 <div id="chat">
@@ -485,6 +493,7 @@ async function login(){
   document.getElementById("login").style.display="none";
   document.getElementById("app").style.display="flex";
   document.getElementById("header-nick").textContent=nick;
+  if(r.role==="admin")document.getElementById("chan-actions").style.display="inline";
   if("Notification" in window&&Notification.permission==="default")Notification.requestPermission();
   const ch=await api("GET","/api/channels");
   if(ch){channels=ch}
@@ -607,6 +616,29 @@ function send(){
 function updateOnline(users){
   const el=document.getElementById("header-online");
   el.textContent=users?.length?"● "+users.length+" en ligne":""
+}
+
+async function createChan(){
+  const name=prompt("Nom du nouveau salon:");
+  if(!name||!name.trim())return;
+  const c=name.trim().toLowerCase().replace(/\\s+/g,"-");
+  const r=await api("POST","/api/channels/create",{user:nick,pass,chan:c});
+  if(r&&r.ok){
+    if(!channels.includes(c)){channels.push(c);renderChannels()}
+    switchChan(c)
+  }else{alert("Impossible de creer le salon")}
+}
+
+async function deleteChan(){
+  if(curChan==="general"){alert("Impossible de supprimer #general");return}
+  if(!confirm("Supprimer #"+curChan+" ?"))return;
+  const r=await api("POST","/api/channels/delete",{user:nick,pass,chan:curChan});
+  if(r&&r.ok){
+    const idx=channels.indexOf(curChan);
+    if(idx>-1)channels.splice(idx,1);
+    renderChannels();
+    switchChan("general")
+  }else{alert("Impossible de supprimer")}
 }
 </script>
 </body>
